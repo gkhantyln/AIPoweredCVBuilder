@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Powered CV Builder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- pdf.js for PDF parsing, required for the import feature -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script>
+      // pdf.js worker configuration is required for it to run in the browser
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+      }
+    </script>
+
+    <style>
+      /* A nice custom scrollbar to match the app's aesthetic */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; /* Tailwind's slate-100 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8; /* Tailwind's slate-400 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b; /* Tailwind's slate-500 */
+      }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+        "html2canvas": "https://aistudiocdn.com/html2canvas@^1.4.1",
+        "jspdf": "https://aistudiocdn.com/jspdf@^3.0.3",
+        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+        "react/": "https://aistudiocdn.com/react@^19.1.1/",
+        "react": "https://aistudiocdn.com/react@^19.1.1"
+      }
+    }
+    </script>
+
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
