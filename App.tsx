@@ -169,37 +169,128 @@ const AppContent: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const cvElement = document.getElementById('cv-preview');
-    if (cvElement) {
-        setIsSaving(true);
-        html2canvas(cvElement, { scale: 3, useCORS: true }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4', true);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    if (!cvElement) return;
+
+    setIsSaving(true);
+    const originalWidth = cvElement.style.width;
+    
+    // Helper to ensure all images within an element are fully loaded
+    const waitForImages = async (element: HTMLElement) => {
+        const images = Array.from(element.getElementsByTagName('img'));
+        const promises = images.map(img => {
+            if (img.complete && img.naturalHeight !== 0) return Promise.resolve(); // Already loaded
+            return new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                // Add a timeout and an error handler to prevent hanging on broken/slow images
+                const timer = setTimeout(() => {
+                    console.warn(`Image load timeout: ${img.src}.`);
+                    resolve(); // Resolve anyway to not fail the whole PDF generation
+                }, 5000); 
+                img.onerror = () => {
+                    clearTimeout(timer);
+                    console.warn(`Could not load image: ${img.src}. It will appear blank in the PDF.`);
+                    resolve(); // Resolve on error to allow PDF generation to continue
+                };
+            });
+        });
+        await Promise.all(promises);
+    };
+
+    try {
+        // For consistent rendering, temporarily set a fixed width
+        cvElement.style.width = '800px'; 
+        
+        // Wait for CSS to apply and for all images to load to get correct dimensions
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        await waitForImages(cvElement);
+        // Add a small extra delay for any final browser rendering adjustments
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const A4_WIDTH_MM = pdf.internal.pageSize.getWidth();
+        const A4_HEIGHT_MM = pdf.internal.pageSize.getHeight();
+        const MARGIN_MM = 15;
+        const CONTENT_WIDTH_MM = A4_WIDTH_MM - MARGIN_MM * 2;
+        let yPos_mm = MARGIN_MM;
+        
+        // Start with a clean slate by deleting the default first page. We will add pages as needed.
+        pdf.deletePage(1); 
+        pdf.addPage();
+        
+        const headerElement = cvElement.querySelector('header');
+        const sectionElements = cvElement.querySelectorAll('section');
+        const elementsToProcess: HTMLElement[] = [];
+        if (headerElement && headerElement.offsetHeight > 0) {
+            elementsToProcess.push(headerElement);
+        }
+        sectionElements.forEach(section => {
+            if (section.offsetHeight > 0) {
+                elementsToProcess.push(section);
+            }
+        });
+
+        for (const element of elementsToProcess) {
+            const canvas = await html2canvas(element, { scale: 3, useCORS: true, backgroundColor: '#ffffff' });
             
-            let heightLeft = imgHeight;
-            let position = 0;
+            const imgHeight_mm = (canvas.height * CONTENT_WIDTH_MM) / canvas.width;
 
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-            heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position -= pdfHeight;
+            // Page break logic: if the element *won't fit at all* on the current page, start a new one.
+            // This is only checked if we are not at the top of a page.
+            if (yPos_mm > MARGIN_MM && (yPos_mm + imgHeight_mm) > (A4_HEIGHT_MM - MARGIN_MM)) {
                 pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-                heightLeft -= pdfHeight;
+                yPos_mm = MARGIN_MM;
             }
             
-            pdf.save(`${(cvData.personalInfo.name || 'cv').replace(/ /g, '_')}.pdf`);
-            setIsSaving(false);
-        }).catch(err => {
-            console.error("Error generating PDF:", err);
-            setIsSaving(false);
-        });
+            let sourceY_px = 0;
+            let heightLeft_mm = imgHeight_mm;
+
+            while (heightLeft_mm > 0) {
+                const spaceOnPage_mm = A4_HEIGHT_MM - yPos_mm - MARGIN_MM;
+                
+                // If there's no space, or a negligible amount, create a new page.
+                if (spaceOnPage_mm < 1) {
+                    pdf.addPage();
+                    yPos_mm = MARGIN_MM;
+                    continue; // Re-evaluate space on the new page
+                }
+                
+                const heightToDraw_mm = Math.min(heightLeft_mm, spaceOnPage_mm);
+                const sourceHeight_px = (heightToDraw_mm / imgHeight_mm) * canvas.height;
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = sourceHeight_px;
+                const tempCtx = tempCanvas.getContext('2d');
+
+                if (tempCtx) {
+                    tempCtx.drawImage(canvas, 0, sourceY_px, canvas.width, sourceHeight_px, 0, 0, canvas.width, sourceHeight_px);
+                    const sliceDataUrl = tempCanvas.toDataURL('image/png');
+                    pdf.addImage(sliceDataUrl, 'PNG', MARGIN_MM, yPos_mm, CONTENT_WIDTH_MM, heightToDraw_mm);
+                }
+                
+                heightLeft_mm -= heightToDraw_mm;
+                sourceY_px += sourceHeight_px;
+                yPos_mm += heightToDraw_mm;
+
+                // If more content from THIS element remains, create a new page
+                if (heightLeft_mm > 0) {
+                    pdf.addPage();
+                    yPos_mm = MARGIN_MM;
+                }
+            }
+        }
+
+        pdf.save(`${(cvData.personalInfo.name || 'cv').replace(/ /g, '_')}.pdf`);
+
+    } catch (error) {
+        console.error("Error generating PDF:", error);
+        alert("An error occurred while generating the PDF. Please try again.");
+    } finally {
+        // Restore original style and state
+        cvElement.style.width = originalWidth;
+        setIsSaving(false);
     }
   };
 
