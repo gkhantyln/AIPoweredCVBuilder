@@ -8,9 +8,10 @@ import { DownloadIcon } from './components/icons/DownloadIcon';
 import { UploadIcon } from './components/icons/UploadIcon';
 import { TrashIcon } from './components/icons/TrashIcon';
 import { SaveIcon } from './components/icons/SaveIcon';
+import { WrenchIcon } from './components/icons/WrenchIcon';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { parseCVWithAI } from './services/geminiService';
+import { parseCVWithAI, initializeAi } from './services/geminiService';
 
 const initialData: CVData = {
   personalInfo: { name: '', title: '', email: '', phone: '', website: '', location: '', photo: null },
@@ -30,6 +31,9 @@ const ChevronDownIcon = () => (
 
 const AppContent: React.FC = () => {
   const [cvData, setCvData] = useState<CVData>(initialData);
+  const [apiKey, setApiKey] = useState('');
+  const [tempApiKey, setTempApiKey] = useState('');
+  const [showApiKeySaved, setShowApiKeySaved] = useState(false);
   const { t, setLanguage, language } = useLanguage();
   const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -38,6 +42,14 @@ const AppContent: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const savedKey = localStorage.getItem('gemini-api-key');
+    if (savedKey) {
+        setApiKey(savedKey);
+        setTempApiKey(savedKey);
+        initializeAi(savedKey);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -76,6 +88,14 @@ const AppContent: React.FC = () => {
         document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleApiKeySave = () => {
+    localStorage.setItem('gemini-api-key', tempApiKey);
+    setApiKey(tempApiKey);
+    initializeAi(tempApiKey);
+    setShowApiKeySaved(true);
+    setTimeout(() => setShowApiKeySaved(false), 2000);
+  };
 
   const handleSave = () => {
     setSaveStatus('saving');
@@ -118,6 +138,14 @@ const AppContent: React.FC = () => {
                 };
                 setCvData(hydratedData);
             } else if (fileExtension === 'txt') {
+                 if (!apiKey) {
+                    alert("Please set your Gemini API key to import from a text file.");
+                    setIsImporting(false);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                    }
+                    return;
+                }
                 const parsedData = await parseCVWithAI(content);
                 setCvData(parsedData); // parseCVWithAI already ensures arrays exist
             } else {
@@ -342,9 +370,45 @@ const AppContent: React.FC = () => {
         </div>
       </header>
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="bg-slate-100 p-4 rounded-lg mb-8 border border-slate-200 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                    <WrenchIcon />
+                    <h2 className="font-semibold text-slate-700">Gemini API Key</h2>
+                    {apiKey ? (
+                        <span className="text-xs bg-green-100 text-green-700 font-medium px-2 py-0.5 rounded-full">Saved</span>
+                    ) : (
+                        <span className="text-xs bg-yellow-100 text-yellow-700 font-medium px-2 py-0.5 rounded-full">Required for AI Features</span>
+                    )}
+                </div>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                    Get your API Key from Google AI Studio
+                </a>
+            </div>
+            <p className="text-sm text-slate-500 mt-2 mb-3">
+                Your key is saved only in your browser's local storage and is never sent to any servers.
+            </p>
+            <div className="flex gap-2">
+                <input
+                    type="password"
+                    value={tempApiKey}
+                    onChange={(e) => setTempApiKey(e.target.value)}
+                    placeholder="Paste your Gemini API key here"
+                    className="flex-grow w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition"
+                    aria-label="Gemini API Key Input"
+                />
+                <button
+                    onClick={handleApiKeySave}
+                    className="flex-shrink-0 text-sm bg-slate-600 text-white px-4 py-2 rounded-md hover:bg-slate-700 disabled:bg-slate-400 transition-colors"
+                    disabled={!tempApiKey}
+                >
+                    {showApiKeySaved ? 'Saved!' : 'Save Key'}
+                </button>
+            </div>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <div className="bg-white p-6 rounded-xl shadow-lg">
-             <CVForm cvData={cvData} setCvData={setCvData} />
+             <CVForm cvData={cvData} setCvData={setCvData} isAiEnabled={!!apiKey} />
           </div>
           <div className="lg:sticky top-24 self-start">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">

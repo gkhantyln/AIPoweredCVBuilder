@@ -1,10 +1,22 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import type { CVData } from '../types';
 
-// FIX: Initialize GoogleGenAI with apiKey from environment variables as per guidelines.
-// The apiKey is expected to be set in the environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+let ai: GoogleGenAI | null = null;
 const model = 'gemini-2.5-flash';
+
+export const initializeAi = (apiKey: string) => {
+    try {
+        if (apiKey) {
+            ai = new GoogleGenAI({ apiKey });
+        } else {
+            ai = null;
+        }
+    } catch (error) {
+        console.error("Failed to initialize GoogleGenAI:", error);
+        ai = null;
+    }
+};
 
 const cvDataSchema = {
     type: Type.OBJECT,
@@ -80,6 +92,9 @@ const cvDataSchema = {
 
 
 export const enhanceTextWithAI = async (prompt: string, textToEnhance: string): Promise<string> => {
+  if (!ai) {
+    return "Error: Gemini API key not set or is invalid. Please add your key in the settings.";
+  }
   if (!textToEnhance.trim()) {
     return "Error: Cannot enhance empty text.";
   }
@@ -87,13 +102,11 @@ export const enhanceTextWithAI = async (prompt: string, textToEnhance: string): 
   try {
     const fullPrompt = `${prompt}\n\nHere is the text to enhance:\n\n"""\n${textToEnhance}\n"""`;
 
-    // FIX: Use ai.models.generateContent as per guidelines for text generation.
     const response = await ai.models.generateContent({
       model,
       contents: fullPrompt,
     });
     
-    // FIX: Access generated text directly from the .text property of the response object.
     const enhancedText = response.text;
     
     if (!enhancedText) {
@@ -111,6 +124,9 @@ export const enhanceTextWithAI = async (prompt: string, textToEnhance: string): 
 };
 
 export const translateTextWithAI = async (textToTranslate: string): Promise<string> => {
+    if (!ai) {
+        return "Error: Gemini API key not set or is invalid. Please add your key in the settings.";
+    }
     if (!textToTranslate.trim()) {
         return "Error: Cannot translate empty text.";
     }
@@ -141,6 +157,9 @@ export const translateTextWithAI = async (textToTranslate: string): Promise<stri
 
 
 export const parseCVWithAI = async (cvText: string): Promise<CVData> => {
+  if (!ai) {
+    throw new Error("Gemini API key not set or is invalid. Please add your key in the settings to use this feature.");
+  }
   try {
     const prompt = `Parse the following resume text into a JSON object matching the provided schema. Ensure that the 'description' for work experience and projects is a single string with distinct points separated by newline characters (\\n), and that 'skills' is a single comma-separated string.
     

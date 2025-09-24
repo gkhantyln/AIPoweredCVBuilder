@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import type { CVData, PersonalInfo, Experience, Education, Certification, Project } from '../types';
 import { enhanceTextWithAI, translateTextWithAI } from '../services/geminiService';
@@ -17,6 +18,7 @@ import { TranslateIcon } from './icons/TranslateIcon';
 interface CVFormProps {
   cvData: CVData;
   setCvData: React.Dispatch<React.SetStateAction<CVData>>;
+  isAiEnabled: boolean;
 }
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
@@ -44,7 +46,7 @@ const InputField: React.FC<{ label: string; name: string; value: string; onChang
   </div>
 );
 
-const TextAreaWithAI: React.FC<{ label: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; onEnhanced: (newValue: string) => void; prompt: string; placeholder?: string; rows?: number }> = ({ label, value, onChange, onEnhanced, prompt, placeholder, rows = 4 }) => {
+const TextAreaWithAI: React.FC<{ label: string; value: string; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; onEnhanced: (newValue: string) => void; prompt: string; isAiEnabled: boolean; placeholder?: string; rows?: number; }> = ({ label, value, onChange, onEnhanced, prompt, isAiEnabled, placeholder, rows = 4 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,11 +81,21 @@ const TextAreaWithAI: React.FC<{ label: string; value: string; onChange: (e: Rea
       <div className="flex justify-between items-center mb-1">
         <label className="block text-sm font-medium text-slate-600">{label}</label>
         <div className="flex items-center gap-3">
-            <button onClick={handleEnhance} disabled={isLoading || isTranslating || !value} className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <button 
+              onClick={handleEnhance} 
+              disabled={!isAiEnabled || isLoading || isTranslating || !value} 
+              className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={!isAiEnabled ? "Please set your Gemini API key to use AI features." : t('enhanceWithAI')}
+            >
               <SparklesIcon />
               {isLoading ? t('enhancing') : t('enhanceWithAI')}
             </button>
-            <button onClick={handleTranslate} disabled={isTranslating || isLoading || !value} className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <button 
+              onClick={handleTranslate} 
+              disabled={!isAiEnabled || isTranslating || isLoading || !value} 
+              className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={!isAiEnabled ? "Please set your Gemini API key to use AI features." : t('translateToTurkish')}
+            >
               <TranslateIcon />
               {isTranslating ? t('translating') : t('translateToTurkish')}
             </button>
@@ -171,7 +183,7 @@ const PersonalInfoSection: React.FC<{ personalInfo: PersonalInfo; setCvData: Rea
   );
 };
 
-const SummarySection: React.FC<{ summary: string; setCvData: React.Dispatch<React.SetStateAction<CVData>> }> = ({ summary, setCvData }) => {
+const SummarySection: React.FC<{ summary: string; setCvData: React.Dispatch<React.SetStateAction<CVData>>; isAiEnabled: boolean; }> = ({ summary, setCvData, isAiEnabled }) => {
   const { t } = useLanguage();
   
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -194,12 +206,13 @@ const SummarySection: React.FC<{ summary: string; setCvData: React.Dispatch<Reac
         prompt={prompt}
         placeholder={t('summaryPlaceholder')}
         rows={5}
+        isAiEnabled={isAiEnabled}
       />
     </Section>
   );
 };
 
-const ExperienceSection: React.FC<{ experience: Experience[]; setCvData: React.Dispatch<React.SetStateAction<CVData>> }> = ({ experience, setCvData }) => {
+const ExperienceSection: React.FC<{ experience: Experience[]; setCvData: React.Dispatch<React.SetStateAction<CVData>>; isAiEnabled: boolean; }> = ({ experience, setCvData, isAiEnabled }) => {
   const { t } = useLanguage();
 
   const handleChange = (id: string, field: keyof Experience, value: string) => {
@@ -248,6 +261,7 @@ const ExperienceSection: React.FC<{ experience: Experience[]; setCvData: React.D
                 prompt={prompt}
                 placeholder={t('descriptionPlaceholder')}
                 rows={5}
+                isAiEnabled={isAiEnabled}
             />
         </div>
       ))}
@@ -259,7 +273,7 @@ const ExperienceSection: React.FC<{ experience: Experience[]; setCvData: React.D
   );
 };
 
-const ProjectsSection: React.FC<{ projects: Project[]; setCvData: React.Dispatch<React.SetStateAction<CVData>> }> = ({ projects, setCvData }) => {
+const ProjectsSection: React.FC<{ projects: Project[]; setCvData: React.Dispatch<React.SetStateAction<CVData>>; isAiEnabled: boolean; }> = ({ projects, setCvData, isAiEnabled }) => {
   const { t } = useLanguage();
 
   const handleChange = (id: string, field: keyof Project, value: string) => {
@@ -304,6 +318,7 @@ const ProjectsSection: React.FC<{ projects: Project[]; setCvData: React.Dispatch
                 prompt={prompt}
                 placeholder={t('projectDescriptionPlaceholder')}
                 rows={4}
+                isAiEnabled={isAiEnabled}
             />
         </div>
       ))}
@@ -398,7 +413,7 @@ const CertificationsSection: React.FC<{ certifications: Certification[]; setCvDa
     );
 };
 
-const SkillsSection: React.FC<{ skills: string; setCvData: React.Dispatch<React.SetStateAction<CVData>> }> = ({ skills, setCvData }) => {
+const SkillsSection: React.FC<{ skills: string; setCvData: React.Dispatch<React.SetStateAction<CVData>>; isAiEnabled: boolean; }> = ({ skills, setCvData, isAiEnabled }) => {
     const { t } = useLanguage();
     
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -421,6 +436,7 @@ const SkillsSection: React.FC<{ skills: string; setCvData: React.Dispatch<React.
                 prompt={prompt}
                 placeholder={t('skillsPlaceholder')}
                 rows={4}
+                isAiEnabled={isAiEnabled}
             />
             <p className="text-xs text-slate-500 mt-1">{t('skillsHint')}</p>
         </Section>
@@ -428,16 +444,16 @@ const SkillsSection: React.FC<{ skills: string; setCvData: React.Dispatch<React.
 };
 
 
-const CVForm: React.FC<CVFormProps> = ({ cvData, setCvData }) => {
+const CVForm: React.FC<CVFormProps> = ({ cvData, setCvData, isAiEnabled }) => {
   return (
     <div>
       <PersonalInfoSection personalInfo={cvData.personalInfo} setCvData={setCvData} />
-      <SummarySection summary={cvData.summary} setCvData={setCvData} />
-      <ExperienceSection experience={cvData.experience} setCvData={setCvData} />
-      <ProjectsSection projects={cvData.projects} setCvData={setCvData} />
+      <SummarySection summary={cvData.summary} setCvData={setCvData} isAiEnabled={isAiEnabled} />
+      <ExperienceSection experience={cvData.experience} setCvData={setCvData} isAiEnabled={isAiEnabled} />
+      <ProjectsSection projects={cvData.projects} setCvData={setCvData} isAiEnabled={isAiEnabled} />
       <EducationSection education={cvData.education} setCvData={setCvData} />
       <CertificationsSection certifications={cvData.certifications} setCvData={setCvData} />
-      <SkillsSection skills={cvData.skills} setCvData={setCvData} />
+      <SkillsSection skills={cvData.skills} setCvData={setCvData} isAiEnabled={isAiEnabled} />
     </div>
   );
 };
