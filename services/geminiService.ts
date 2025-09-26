@@ -241,12 +241,14 @@ const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyzeCVWithAI = async (
     cvJsonString: string,
+    analysisLanguage: 'en' | 'tr',
     onProgress: (message: string) => void
 ): Promise<AnalysisResult> => {
     if (!ai) {
         throw new Error("Gemini API key not set or is invalid. Please add your key in the settings to use this feature.");
     }
 
+    const outputLanguage = analysisLanguage === 'tr' ? 'Turkish' : 'English';
     const systemInstruction = `You are an advanced CV/Resume evaluation expert for the Turkish job market. I will send you a single, large JSON document containing a user's CV data. However, this JSON document will be broken into multiple text parts because of size limitations.
 
 Your task is to:
@@ -255,7 +257,8 @@ Your task is to:
 3.  Internally, you must concatenate these text parts in the order you receive them to reconstruct the original, complete JSON string.
 4.  Do NOT attempt to analyze or parse any individual part. Wait until I give the final command.
 5.  After I send the message "I have now provided all parts of the CV JSON.", you will then parse the complete, reassembled JSON string.
-6.  Finally, perform a comprehensive evaluation based on the full CV data and respond ONLY with a single JSON object matching the provided schema. Your evaluation should be practical, concise, and actionable, considering ATS optimization and Turkish hiring practices.`;
+6.  Finally, perform a comprehensive evaluation based on the full CV data and respond ONLY with a single JSON object matching the provided schema. Your evaluation should be practical, concise, and actionable, considering ATS optimization and Turkish hiring practices.
+7.  IMPORTANT: The final JSON response containing the analysis MUST be written entirely in ${outputLanguage}. All strings within the JSON object (strengths, weaknesses, feedback, etc.) must be in ${outputLanguage}.`;
     
     const chat: Chat = ai.chats.create({
       model,
@@ -274,7 +277,7 @@ Your task is to:
         }
 
         onProgress('Finalizing analysis...');
-        const finalPrompt = "I have now provided all parts of the CV JSON. Please reassemble them, parse the complete JSON, and provide the full, final analysis in the specified JSON format. Your response must be only the JSON object, with no other text before or after it.";
+        const finalPrompt = `I have now provided all parts of the CV JSON. Please reassemble them, parse the complete JSON, and provide the full, final analysis in the specified JSON format. Your response must be only the JSON object, with no other text before or after it. Remember, all text in the final analysis must be in ${outputLanguage}.`;
 
         const finalResponse = await chat.sendMessage({ 
             message: finalPrompt,

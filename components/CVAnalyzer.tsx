@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { analyzeCVWithAI, AnalysisResult } from '../services/geminiService';
 import { UploadIcon } from './icons/UploadIcon';
@@ -30,7 +30,7 @@ const systemPromptText = `You are an advanced CV/Resume evaluation expert specia
 `;
 
 const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [cvContent, setCvContent] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +40,11 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [isPromptVisible, setIsPromptVisible] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [analysisLanguage, setAnalysisLanguage] = useState<'en' | 'tr'>(language);
+
+    useEffect(() => {
+        setAnalysisLanguage(language);
+    }, [language]);
 
     const handleFileChange = (file: File | null) => {
         if (file) {
@@ -96,8 +101,7 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
         setAnalysisResult(null);
         setProgress('Starting analysis...');
         try {
-            // Pass the raw JSON string directly to the service
-            const result = await analyzeCVWithAI(cvContent, (message) => {
+            const result = await analyzeCVWithAI(cvContent, analysisLanguage, (message) => {
                 setProgress(message);
             });
             setAnalysisResult(result);
@@ -189,6 +193,28 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
                         {isLoading ? t('analyzing') : t('analyze')}
                     </button>
                     {!isAiEnabled && <p className="text-xs text-yellow-600 mt-2 text-center">Please provide your API key in the settings to enable analysis.</p>}
+                </div>
+            </div>
+
+            <div className="mb-8">
+                <label className="block text-sm font-medium text-slate-700 mb-2 text-center">{t('analysisLanguageLabel')}</label>
+                <div className="flex justify-center">
+                    <div className="flex rounded-md bg-slate-100 p-1 border border-slate-200" role="group">
+                        <button
+                            onClick={() => setAnalysisLanguage('en')}
+                            className={`px-4 py-1 text-sm font-semibold rounded-md transition-all ${analysisLanguage === 'en' ? 'bg-white text-slate-800 shadow-sm' : 'bg-transparent text-slate-600 hover:bg-slate-200'}`}
+                            aria-pressed={analysisLanguage === 'en'}
+                        >
+                            English
+                        </button>
+                        <button
+                            onClick={() => setAnalysisLanguage('tr')}
+                            className={`px-4 py-1 text-sm font-semibold rounded-md transition-all ${analysisLanguage === 'tr' ? 'bg-white text-slate-800 shadow-sm' : 'bg-transparent text-slate-600 hover:bg-slate-200'}`}
+                             aria-pressed={analysisLanguage === 'tr'}
+                        >
+                            Türkçe
+                        </button>
+                    </div>
                 </div>
             </div>
             

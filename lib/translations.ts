@@ -31,6 +31,7 @@ export const translations = {
     generalAdvice: 'General Improvement Advice',
     systemPrompt: 'System Prompt',
     promptDescription: 'The AI will use the following system prompt to analyze your CV. This ensures a consistent and high-quality evaluation tailored to the Turkish job market.',
+    analysisLanguageLabel: 'Analysis Language',
     // CVForm
     enhancing: 'Enhancing...',
     enhanceWithAI: 'Enhance with AI',
@@ -129,6 +130,7 @@ export const translations = {
     generalAdvice: 'Genel İyileştirme Tavsiyeleri',
     systemPrompt: 'Sistem Yönergesi',
     promptDescription: 'Yapay zeka, CV\'nizi analiz etmek için aşağıdaki sistem yönergesini kullanacaktır. Bu, Türkiye iş piyasasına özel tutarlı ve yüksek kaliteli bir değerlendirme sağlar.',
+    analysisLanguageLabel: 'Analiz Dili',
     // CVForm
     enhancing: 'İyileştiriliyor...',
     enhanceWithAI: 'YZ ile İyileştir',
