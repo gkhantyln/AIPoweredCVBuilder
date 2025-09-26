@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CVForm from './components/CVForm';
 import CVPreview from './components/CVPreview';
+import CVAnalyzer from './components/CVAnalyzer';
+import Footer from './components/Footer';
 import { CVData } from './types';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { DownloadIcon } from './components/icons/DownloadIcon';
@@ -29,6 +31,8 @@ const ChevronDownIcon = () => (
     </svg>
 );
 
+type View = 'builder' | 'analyzer';
+
 const AppContent: React.FC = () => {
   const [cvData, setCvData] = useState<CVData>(initialData);
   const [apiKey, setApiKey] = useState('');
@@ -41,6 +45,7 @@ const AppContent: React.FC = () => {
   const [isDownloadMenuOpen, setIsDownloadMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const downloadMenuRef = useRef<HTMLDivElement>(null);
+  const [activeView, setActiveView] = useState<View>('builder');
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini-api-key');
@@ -476,19 +481,24 @@ const AppContent: React.FC = () => {
                 </button>
             </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
-             <CVForm cvData={cvData} setCvData={setCvData} isAiEnabled={!!apiKey} />
-          </div>
-          <div className="lg:sticky top-24 self-start">
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div id="cv-preview-container" className="h-[calc(100vh-8rem)] overflow-y-auto">
-                    <CVPreview cvData={cvData} />
-                </div>
+        {activeView === 'builder' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="bg-white p-6 rounded-xl shadow-lg">
+               <CVForm cvData={cvData} setCvData={setCvData} isAiEnabled={!!apiKey} />
+            </div>
+            <div className="lg:sticky top-24 self-start">
+              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div id="cv-preview-container" className="h-[calc(100vh-8rem)] overflow-y-auto">
+                      <CVPreview cvData={cvData} />
+                  </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <CVAnalyzer isAiEnabled={!!apiKey} />
+        )}
       </main>
+      <Footer activeView={activeView} setActiveView={setActiveView} />
     </div>
   );
 }

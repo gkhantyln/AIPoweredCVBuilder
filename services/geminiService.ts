@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Chat } from "@google/genai";
 import type { CVData } from '../types';
 
 let ai: GoogleGenAI | null = null;
@@ -199,4 +199,99 @@ export const parseCVWithAI = async (cvText: string): Promise<CVData> => {
     console.error("Error parsing CV with AI:", error);
     throw new Error("Failed to parse CV data. The AI model could not process the provided text.");
   }
+};
+
+export interface AnalysisResult {
+    overallScore: number;
+    strengths: string[];
+    weaknesses: string[];
+    sectionBasedSuggestions: {
+        section: string;
+        feedback: string;
+    }[];
+    industrySpecificRecommendations: string[];
+    generalImprovementAdvice: string[];
+}
+
+
+const analysisSchema = {
+  type: Type.OBJECT,
+  properties: {
+    overallScore: { type: Type.NUMBER, description: 'A score from 0 to 100.' },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+    weaknesses: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Weaknesses or missing information." },
+    sectionBasedSuggestions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          section: { type: Type.STRING, description: "e.g., Personal Information, Work Experience" },
+          feedback: { type: Type.STRING },
+        },
+        required: ['section', 'feedback']
+      }
+    },
+    industrySpecificRecommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
+    generalImprovementAdvice: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+  required: ['overallScore', 'strengths', 'weaknesses', 'sectionBasedSuggestions', 'industrySpecificRecommendations', 'generalImprovementAdvice']
+};
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const analyzeCVWithAI = async (
+    cvJsonString: string,
+    onProgress: (message: string) => void
+): Promise<AnalysisResult> => {
+    if (!ai) {
+        throw new Error("Gemini API key not set or is invalid. Please add your key in the settings to use this feature.");
+    }
+
+    const systemInstruction = `You are an advanced CV/Resume evaluation expert for the Turkish job market. I will send you a single, large JSON document containing a user's CV data. However, this JSON document will be broken into multiple text parts because of size limitations.
+
+Your task is to:
+1.  Receive each part I send you.
+2.  Acknowledge each part with a simple "OK."
+3.  Internally, you must concatenate these text parts in the order you receive them to reconstruct the original, complete JSON string.
+4.  Do NOT attempt to analyze or parse any individual part. Wait until I give the final command.
+5.  After I send the message "I have now provided all parts of the CV JSON.", you will then parse the complete, reassembled JSON string.
+6.  Finally, perform a comprehensive evaluation based on the full CV data and respond ONLY with a single JSON object matching the provided schema. Your evaluation should be practical, concise, and actionable, considering ATS optimization and Turkish hiring practices.`;
+    
+    const chat: Chat = ai.chats.create({
+      model,
+      config: { systemInstruction },
+    });
+
+    try {
+        const chunkSize = 10000; // Split the raw string into 10k character chunks
+        const numChunks = Math.ceil(cvJsonString.length / chunkSize);
+
+        for (let i = 0; i < numChunks; i++) {
+            const chunk = cvJsonString.substring(i * chunkSize, (i + 1) * chunkSize);
+            onProgress(`Sending CV data (Part ${i + 1}/${numChunks})...`);
+            await chat.sendMessage({ message: `Here is part ${i + 1}/${numChunks} of the CV JSON document:\n\n${chunk}` });
+            await wait(300); // Small delay to prevent rate limiting
+        }
+
+        onProgress('Finalizing analysis...');
+        const finalPrompt = "I have now provided all parts of the CV JSON. Please reassemble them, parse the complete JSON, and provide the full, final analysis in the specified JSON format. Your response must be only the JSON object, with no other text before or after it.";
+
+        const finalResponse = await chat.sendMessage({ 
+            message: finalPrompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: analysisSchema,
+            },
+        });
+
+        const jsonString = finalResponse.text.trim();
+        return JSON.parse(jsonString);
+
+    } catch (error: any) {
+        console.error("Error analyzing CV with AI:", error);
+        if (error.message && (error.message.includes('token') || (error.toString && error.toString().includes('token')))) {
+            throw new Error(`Analysis failed because the CV is too large, even for the chunking method. Please try with a more concise CV. (Details: ${error.message})`);
+        }
+        throw new Error(`Failed to analyze CV. The AI model could not process the provided data. (Details: ${error.message})`);
+    }
 };
