@@ -26,7 +26,8 @@ const systemPromptText = `You are an advanced CV/Resume evaluation expert specia
     *   **References / Additional Info**: optional but valuable additions.
 5.  Give actionable improvement suggestions per section and general recommendations for enhancing impact and ATS (Applicant Tracking System) compatibility.
 6.  Provide industry/sector-specific advice if the CV is for tech, finance, healthcare, or other domains.
-7.  Output in a clear, structured JSON format. Always align your feedback with best hiring practices in Turkey, and make it practical, concise, and actionable. Consider readability, ATS optimization, and relevance to the target position.
+7.  Provide a final verdict. From the perspective of an AI recruiter, state whether the candidate is interview-worthy or hireable and briefly explain why.
+8.  Output in a clear, structured JSON format. Always align your feedback with best hiring practices in Turkey, and make it practical, concise, and actionable. Consider readability, ATS optimization, and relevance to the target position.
 `;
 
 const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
@@ -249,6 +250,13 @@ const CVAnalyzer: React.FC<CVAnalyzerProps> = ({ isAiEnabled }) => {
                         <h3 className="text-lg font-semibold text-slate-700 mb-2">{t('overallScore')}</h3>
                         <ScoreCircle score={analysisResult.overallScore} />
                     </div>
+
+                    {analysisResult.hiringDecision && (
+                        <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-r-lg shadow-md" role="alert">
+                            <h3 className="font-bold mb-2">{t('hiringDecision')}</h3>
+                            <p className="text-sm">{analysisResult.hiringDecision}</p>
+                        </div>
+                    )}
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <ResultCard title={t('strengths')}>

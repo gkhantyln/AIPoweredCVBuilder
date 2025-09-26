@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     appTitle: 'AI-Powered CV Builder',
@@ -29,6 +30,7 @@ export const translations = {
     sectionSuggestions: 'Section-Based Suggestions',
     industryRecommendations: 'Industry-Specific Recommendations',
     generalAdvice: 'General Improvement Advice',
+    hiringDecision: 'Hiring Verdict',
     systemPrompt: 'System Prompt',
     promptDescription: 'The AI will use the following system prompt to analyze your CV. This ensures a consistent and high-quality evaluation tailored to the Turkish job market.',
     analysisLanguageLabel: 'Analysis Language',
@@ -128,6 +130,7 @@ export const translations = {
     sectionSuggestions: 'Bölüm Bazlı Öneriler',
     industryRecommendations: 'Sektöre Özel Öneriler',
     generalAdvice: 'Genel İyileştirme Tavsiyeleri',
+    hiringDecision: 'İşe Alım Kararı',
     systemPrompt: 'Sistem Yönergesi',
     promptDescription: 'Yapay zeka, CV\'nizi analiz etmek için aşağıdaki sistem yönergesini kullanacaktır. Bu, Türkiye iş piyasasına özel tutarlı ve yüksek kaliteli bir değerlendirme sağlar.',
     analysisLanguageLabel: 'Analiz Dili',

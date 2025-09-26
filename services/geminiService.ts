@@ -211,6 +211,7 @@ export interface AnalysisResult {
     }[];
     industrySpecificRecommendations: string[];
     generalImprovementAdvice: string[];
+    hiringDecision: string;
 }
 
 
@@ -233,8 +234,9 @@ const analysisSchema = {
     },
     industrySpecificRecommendations: { type: Type.ARRAY, items: { type: Type.STRING } },
     generalImprovementAdvice: { type: Type.ARRAY, items: { type: Type.STRING } },
+    hiringDecision: { type: Type.STRING, description: "A final verdict from an AI recruiter's perspective on whether the candidate is interview-worthy or hireable. This should be a short paragraph explaining the reasoning." }
   },
-  required: ['overallScore', 'strengths', 'weaknesses', 'sectionBasedSuggestions', 'industrySpecificRecommendations', 'generalImprovementAdvice']
+  required: ['overallScore', 'strengths', 'weaknesses', 'sectionBasedSuggestions', 'industrySpecificRecommendations', 'generalImprovementAdvice', 'hiringDecision']
 };
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -257,8 +259,9 @@ Your task is to:
 3.  Internally, you must concatenate these text parts in the order you receive them to reconstruct the original, complete JSON string.
 4.  Do NOT attempt to analyze or parse any individual part. Wait until I give the final command.
 5.  After I send the message "I have now provided all parts of the CV JSON.", you will then parse the complete, reassembled JSON string.
-6.  Finally, perform a comprehensive evaluation based on the full CV data and respond ONLY with a single JSON object matching the provided schema. Your evaluation should be practical, concise, and actionable, considering ATS optimization and Turkish hiring practices.
-7.  IMPORTANT: The final JSON response containing the analysis MUST be written entirely in ${outputLanguage}. All strings within the JSON object (strengths, weaknesses, feedback, etc.) must be in ${outputLanguage}.`;
+6.  Perform a comprehensive evaluation based on the full CV data and respond ONLY with a single JSON object matching the provided schema. Your evaluation should be practical, concise, and actionable, considering ATS optimization and Turkish hiring practices.
+7.  After the detailed analysis, provide a final verdict in the 'hiringDecision' field. This should be a concise paragraph from the perspective of an AI recruiter, stating whether the candidate should be invited for an interview and explaining the reasoning behind this decision.
+8.  IMPORTANT: The final JSON response containing the analysis MUST be written entirely in ${outputLanguage}. All strings within the JSON object (strengths, weaknesses, feedback, etc.) must be in ${outputLanguage}.`;
     
     const chat: Chat = ai.chats.create({
       model,
