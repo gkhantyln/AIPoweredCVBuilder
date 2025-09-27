@@ -13,6 +13,12 @@ export const translations = {
     language: 'Language',
     save: 'Save',
     saved: 'Saved!',
+    // PDF Customizer
+    customizePDFTitle: 'Customize PDF',
+    backToEditor: 'Back to Editor',
+    fontSize: 'Font Size',
+    generateAndDownload: 'Generate and Download PDF',
+    generating: 'Generating...',
     // Footer
     cvBuilder: 'CV Builder',
     cvAnalyzer: 'CV Analyzer',
@@ -113,6 +119,12 @@ export const translations = {
     language: 'Dil',
     save: 'Kaydet',
     saved: 'Kaydedildi!',
+    // PDF Customizer
+    customizePDFTitle: 'PDF\'i Özelleştir',
+    backToEditor: 'Düzenleyiciye Dön',
+    fontSize: 'Yazı Tipi Boyutu',
+    generateAndDownload: 'Oluştur ve PDF İndir',
+    generating: 'Oluşturuluyor...',
     // Footer
     cvBuilder: 'CV Oluşturucu',
     cvAnalyzer: 'CV Analizörü',
